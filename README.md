@@ -1,6 +1,6 @@
-# Confyg
+# Weldyn
 
-The Confyg package implements the `YamlConfigurableModel`, which is a flexible class for working with Pydantic models and YAML files.
+The Weldyn package implements the `YamlConfigurableModel`, which is a flexible class for working with Pydantic models and YAML files.
 It allows you to easily define and update configurations for your Python applications.
 
 ## Features
@@ -18,8 +18,9 @@ The package requires Python 3.10+.
 ```python
 from pathlib import Path
 
-from confyg import get_root, validator, BaseModel, YamlConfigurableModel
-# `BaseModel` and `validator` can be imported from `confyg` instead of `pydantic`
+from weldyn import get_root, validator, BaseModel, YamlConfigurableModel
+
+# `BaseModel` and `validator` can be imported from `weldyn` instead of `pydantic`
 
 
 ROOT_DIR = get_root(__file__, depth=1)  # Get the absolute path to the project's root directory
@@ -44,7 +45,7 @@ class TfIdfConfig(BaseModel):
     # Validators can be used: in this case `incremented` will be 1 in the YAML file, but 2 in the Pydantic model
     @validator('incremented', pre=True)
     def validate_incremented(cls, v):
-        return v+1
+        return v + 1
 
 
 class RandomForestConfig(BaseModel):

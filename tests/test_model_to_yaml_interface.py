@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from confyg import BaseModel, YamlConfigurableModel
-from confyg.model_to_yaml_interface import generate_yaml_from_model, load_yaml, check_yaml_path, check_model_overlap, \
+from weldyn import BaseModel, YamlConfigurableModel
+from weldyn.model_to_yaml_interface import generate_yaml_from_model, load_yaml, check_yaml_path, check_model_overlap, \
     get_model_mapping_and_path
 
 

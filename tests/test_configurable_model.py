@@ -4,7 +4,7 @@ import pytest
 import yaml
 from pydantic import validator
 
-from confyg import BaseModel, YamlConfigurableModel
+from weldyn import BaseModel, YamlConfigurableModel
 
 
 class Model1(BaseModel):

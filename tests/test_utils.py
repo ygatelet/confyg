@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from confyg import get_root
+from weldyn import get_root
 
 
 def test_get_root():

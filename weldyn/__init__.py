@@ -1,6 +1,6 @@
 __version__ = '0.0.1'
 
-from .confyg import (
+from .weldyn import (
     validator,
     root_validator,
     BaseModel,
