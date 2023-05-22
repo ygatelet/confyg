@@ -9,7 +9,13 @@ It allows you to easily define and update configurations for your Python applica
 - The location of the YAML files and which sub-models are written to which file can be easily configured.
 - When a YAML file does not exist, it is automatically created.
 - When a YAML file exists, values in the file have priority over values defined in the Pydantic model. Changing the value in the Pydantic model won't change its value in the YAML file.
-- If a field is added to or removed from the Pydantic model, the YAML file is automatically updated to reflect this change. 
+- If a field is added to or removed from the Pydantic model, the YAML file is automatically updated to reflect this change.
+
+## Installation
+
+```bash
+pip install weldyn
+```
 
 ## Usage
 
