@@ -39,6 +39,9 @@ class YamlConfigurableModel(BaseModel):
             MODEL_MAPPING = {
                 'ml_config': ['model', 'preprocessing'],
             }
+
+
+    cfg = MyConfig()
     ```
     """
     class YamlConfig:

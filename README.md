@@ -94,7 +94,7 @@ class MyConfig(YamlConfigurableModel):
 
 
 # Initialize the model
-cfg = Config()
+cfg = MyConfig()
 ```
 
 Now you can access your configuration from anywhere in the project:
