@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from pydantic import validator
+from pydantic import field_validator
 
 from weldyn import BaseModel, YamlConfigurableModel
 
@@ -12,7 +12,8 @@ class Model1(BaseModel):
     attribute_1b: str = 'value'
     attribute_1c: int = 1
 
-    @validator('attribute_1c')
+    @field_validator('attribute_1c')
+    @classmethod
     def increment(cls, v):
         return v + 1
 
@@ -23,25 +24,25 @@ class Model2(BaseModel):
 
 
 class BlockConfig(YamlConfigurableModel):
-    model_1: Model1 = Model1()
-    model_2: Model2 = Model2()
+    schema_1: Model1 = Model1()
+    schema_2: Model2 = Model2()
 
     class YamlConfig:
         YAML_PATH: Path = Path('/tmp')  # Test as `Path`
         MODEL_MAPPING: dict[str, list[str]] = {
-            'models.yaml': ['model_1', 'model_2'],
+            'models.yaml': ['schema_1', 'schema_2'],
         }
 
 
 class SplitConfig(YamlConfigurableModel):
-    model_1: Model1 = Model1()
-    model_2: Model2 = Model2()
+    schema_1: Model1 = Model1()
+    schema_2: Model2 = Model2()
 
     class YamlConfig:
         YAML_PATH: Path = '/tmp'  # Test path as `str`
         MODEL_MAPPING: dict[str, list[str]] = {
-            'model_1': ['model_1'],
-            'model_2': ['model_2'],
+            'schema_1': ['schema_1'],
+            'schema_2': ['schema_2'],
         }
 
 
@@ -49,8 +50,8 @@ class SplitConfig(YamlConfigurableModel):
 def yaml_files(request):
     yaml_file_paths = [
         Path("/tmp/models.yaml"),
-        Path("/tmp/model_1.yaml"),
-        Path("/tmp/model_2.yaml"),
+        Path("/tmp/schema_1.yaml"),
+        Path("/tmp/schema_2.yaml"),
     ]
 
     def remove_files():
@@ -67,11 +68,11 @@ def yaml_files(request):
 @pytest.fixture
 def block_yaml_content():
     return '''\
-    model_1:
+    schema_1:
       attribute_1a: 2
       attribute_1b: value
       attribute_1c: 41
-    model_2:
+    schema_2:
       attribute_2a: new value
       attribute_2b: -0.01
     '''
@@ -80,17 +81,17 @@ def block_yaml_content():
 @pytest.fixture
 def nested_yaml_content():
     return '''\
-    model_1:
+    schema_1:
       attribute_1a: 2
       attribute_1b: value
-      sub_model_1a:
+      sub_schema_1a:
         attribute_1c: 41
         attribute_1d: some_value
-        sub_sub_model_1a:
+        sub_sub_schema_1a:
           attribute_1f: nested_value
           attribute_1g: 1000
       attribute_1e: 100
-    model_2:
+    schema_2:
       attribute_2a: new value
       attribute_2b: -0.01
     '''
@@ -116,11 +117,11 @@ def test_yaml_priority(yaml_files, block_yaml_content):
 
     # Load model
     block_config = BlockConfig()
-    assert block_config.model_1.attribute_1a == 2
-    assert block_config.model_1.attribute_1b == 'value'
-    assert block_config.model_1.attribute_1c == 42  # Test validator in sub-model
-    assert block_config.model_2.attribute_2a == 'new value'
-    assert block_config.model_2.attribute_2b == -0.01
+    assert block_config.schema_1.attribute_1a == 2
+    assert block_config.schema_1.attribute_1b == 'value'
+    assert block_config.schema_1.attribute_1c == 42  # Test validator in sub-model
+    assert block_config.schema_2.attribute_2a == 'new value'
+    assert block_config.schema_2.attribute_2b == -0.01
 
     yaml_files[0].unlink()
 
@@ -130,11 +131,11 @@ def test_nonexistent_yaml_path():
         attr: int = 1
 
     class NonExistentPathConfig(YamlConfigurableModel):
-        model_1: MockModel = MockModel()
+        schema_1: MockModel = MockModel()
 
         class YamlConfig:
             MODEL_MAPPING = {
-                'model': ['model_1']
+                'model': ['schema_1']
             }
 
     # Should raise an error if there is no path or mapping
@@ -147,7 +148,7 @@ def test_nonexistent_model_mapping():
         attr: int = 1
 
     class NonExistentModelMappingConfig(YamlConfigurableModel):
-        model_1: MockModel = MockModel()
+        schema_1: MockModel = MockModel()
 
         class YamlConfig:
             YAML_PATH = Path('/tmp')
@@ -169,26 +170,26 @@ def test_nested_yaml_update(yaml_files, nested_yaml_content):
 
     class SubModel(BaseModel):
         attribute_1c: int = 42
-        sub_sub_model_1a: SubSubModel = SubSubModel()  # Changed more nested model
+        sub_sub_schema_1a: SubSubModel = SubSubModel()  # Changed more nested model
 
     class NewModel1(BaseModel):
         attribute_1a: int = 2
         attribute_1b: str = 'value'
-        sub_model_1a: SubModel = SubModel()  # Changed sub-model
+        sub_schema_1a: SubModel = SubModel()  # Changed sub-model
         # no `attribute_1e`
 
     class Model3(BaseModel):
         attribute_3c: bool = True
 
     class DifferentConfig(YamlConfigurableModel):
-        model_1: NewModel1 = NewModel1()
-        # no `model_2`
-        model_3: Model3 = Model3()
+        schema_1: NewModel1 = NewModel1()
+        # no `schema_2`
+        schema_3: Model3 = Model3()
 
         class YamlConfig:
             YAML_PATH = yaml_files[0].parent
             MODEL_MAPPING = {
-                yaml_files[0].stem: ['model_1', 'model_3'],
+                yaml_files[0].stem: ['schema_1', 'schema_3'],
             }
 
     DifferentConfig()
@@ -196,14 +197,14 @@ def test_nested_yaml_update(yaml_files, nested_yaml_content):
     with open(yaml_files[0]) as f:
         data = yaml.safe_load(f)
 
-    assert 'model_1' in data.keys()
-    assert 'sub_model_1a' in data['model_1'].keys()  # Sub-model still exists
-    assert 'sub_sub_model_1a' in data['model_1']['sub_model_1a'].keys()  # Sub-model still exists
-    assert 'model_2' not in data.keys(), data  # Model removed
-    assert 'model_3' in data.keys()  # Model added
-    assert 'attribute_1c' in data['model_1']['sub_model_1a'].keys()  # Attribute still exists
-    assert 'attribute_1d' not in data['model_1']['sub_model_1a'].keys()  # Attribute removed
-    assert 'attribute_1f' in data['model_1']['sub_model_1a']['sub_sub_model_1a'].keys()  # Attribute still exists
-    assert 'attribute_1g' not in data['model_1']['sub_model_1a']['sub_sub_model_1a'].keys()  # Attribute removed
-    assert 'attribute_1h' in data['model_1']['sub_model_1a']['sub_sub_model_1a'].keys()  # New attribute
-    assert 'attribute_1e' not in data['model_1'].keys()  # Attribute removed from main model
+    assert 'schema_1' in data.keys()
+    assert 'sub_schema_1a' in data['schema_1'].keys()  # Sub-model still exists
+    assert 'sub_sub_schema_1a' in data['schema_1']['sub_schema_1a'].keys()  # Sub-model still exists
+    assert 'schema_2' not in data.keys(), data  # Model removed
+    assert 'schema_3' in data.keys()  # Model added
+    assert 'attribute_1c' in data['schema_1']['sub_schema_1a'].keys()  # Attribute still exists
+    assert 'attribute_1d' not in data['schema_1']['sub_schema_1a'].keys()  # Attribute removed
+    assert 'attribute_1f' in data['schema_1']['sub_schema_1a']['sub_sub_schema_1a'].keys()  # Attribute still exists
+    assert 'attribute_1g' not in data['schema_1']['sub_schema_1a']['sub_sub_schema_1a'].keys()  # Attribute removed
+    assert 'attribute_1h' in data['schema_1']['sub_schema_1a']['sub_sub_schema_1a'].keys()  # New attribute
+    assert 'attribute_1e' not in data['schema_1'].keys()  # Attribute removed from main model

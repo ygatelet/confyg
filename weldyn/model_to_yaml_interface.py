@@ -42,20 +42,20 @@ def dump_yaml_data(yaml_file_path: Path, data: dict[str, Any]) -> None:
         yaml.dump(data, file, Dumper=OrderedDumper)
 
 
-def generate_yaml_from_model(field: Field, model_class: type[BaseModel], yaml_file_path: Path) -> None:
+def generate_yaml_from_model(info: Field, model_class: type[BaseModel], yaml_file_path: Path) -> None:
     """
     Generates a YAML file representing a given Pydantic model.
 
     This function serializes a new instance of the provided Pydantic model class, using the model's default values.
     The serialized model is then written to a new YAML file at the specified path.
 
-    :param field: The Pydantic field being processed.
+    :param info: The Pydantic field being processed.
     :param model_class: The class of the Pydantic field being processed.
     :param yaml_file_path: The desired Path for the new YAML file. This path must include the desired file name and
     extension.
     """
-    model_data = model_class().dict()
-    data = {field.name: model_data}
+    model_data = model_class.model_dump()
+    data = {info.field_name: model_data}
     dump_yaml_data(yaml_file_path, data)
 
 
@@ -96,11 +96,11 @@ def remove_missing_sections(data: dict[str, Any], models: list[str]) -> dict[str
     return data
 
 
-def update_yaml_from_model(field: Field, model_class: type[BaseModel], models: list[str], yaml_file_path: Path):
+def update_yaml_from_model(info: Field, model_class: type[BaseModel], models: list[str], yaml_file_path: Path):
     """
     Update a YAML file based on a given Pydantic model and field.
 
-    :param field: Pydantic field to be processed.
+    :param info: Pydantic field to be processed.
     :param model_class: Class of the Pydantic field to be processed.
     :param models: List of models that are expected to be present in the YAML file.
     :param yaml_file_path: Path to the existing YAML file.
@@ -108,18 +108,18 @@ def update_yaml_from_model(field: Field, model_class: type[BaseModel], models: l
     """
     data = load_yaml(yaml_file_path)
 
-    model_data = model_class().dict()
+    model_data = model_class.model_dump()
 
-    if field.name not in data or any(key not in data[field.name] for key in model_data):
-        data[field.name] = model_data
+    if info.field_name not in data or any(key not in data[info.field_name] for key in model_data):
+        data[info.field_name] = model_data
 
-    if field.name in data and isinstance(data[field.name], dict):
-        data[field.name] = update_nested_yaml_from_model(model_data, data[field.name])
+    if info.field_name in data and isinstance(data[info.field_name], dict):
+        data[info.field_name] = update_nested_yaml_from_model(model_data, data[info.field_name])
 
     data = remove_missing_sections(data, models)
     dump_yaml_data(yaml_file_path, data)
 
-    return data[field.name]
+    return data[info.field_name]
 
 
 def check_yaml_path(yaml_file: str, yaml_path: Path) -> Path:
@@ -133,18 +133,15 @@ def check_yaml_path(yaml_file: str, yaml_path: Path) -> Path:
     return yaml_file_path
 
 
-def check_model_overlap(field: Field, model_mapping: dict[str, list[str]]) -> None:
+def check_model_overlap(info: Field, model_mapping: dict[str, list[str]]) -> None:
     """
     Check if a sub-model is dumped in several files.
     """
-    if len([yaml_file for yaml_file, models in model_mapping.items() if field.name in models]) > 1:
-        raise ValueError(f"The sub-model {field.name} cannot be dumped in more than one YAML file.")
+    if len([yaml_file for yaml_file, models in model_mapping.items() if info.field_name in models]) > 1:
+        raise ValueError(f"The sub-model {info.field_name} cannot be dumped in more than one YAML file.")
 
 
 def get_model_mapping_and_path(cls) -> tuple[Path, dict[str | None, list[str]]]:
-    """
-    Parse inner `YamlConfig` class to get YAML path and model mapping.
-    """
     """
     Extracts the YAML path and model mapping from a Pydantic model's YamlConfig.
 

@@ -24,7 +24,7 @@ The package requires Python 3.10+.
 ```python
 from pathlib import Path
 
-from weldyn import get_root, validator, BaseModel, YamlConfigurableModel
+from weldyn import get_root, field_validator, BaseModel, YamlConfigurableModel
 
 # `BaseModel` and `validator` can be imported from `weldyn` instead of `pydantic`
 
@@ -49,7 +49,7 @@ class TfIdfConfig(BaseModel):
     incremented: int = 1
 
     # Validators can be used: in this case `incremented` will be 1 in the YAML file, but 2 in the Pydantic model
-    @validator('incremented', pre=True)
+    @field_validator('incremented', mode='before')
     def validate_incremented(cls, v):
         return v + 1
 

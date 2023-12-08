@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from pydantic import BaseModel, validator, root_validator
+from pydantic import BaseModel, model_validator, field_validator, ConfigDict
+from pydantic_core.core_schema import ValidationInfo
 
 from .model_to_yaml_interface import get_model_mapping_and_path, check_model_overlap, check_yaml_path, \
     update_yaml_from_model, generate_yaml_from_model
@@ -44,29 +45,33 @@ class YamlConfigurableModel(BaseModel):
     cfg = MyConfig()
     ```
     """
+    model_config = ConfigDict(
+        validate_default=True,
+    )
+
     class YamlConfig:
         YAML_PATH: Path | str
         MODEL_MAPPING: dict[str, list[str]]
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     def check_yaml_path(cls, values):
         yaml_path = cls.YamlConfig.YAML_PATH
         if not isinstance(yaml_path, Path):
             cls.YamlConfig.YAML_PATH = Path(yaml_path)
         return values
 
-    @validator("*", pre=True, always=True)
-    def load_or_generate_model_config(cls, v, field):
+    @field_validator("*", mode='before')
+    def load_or_generate_model_config(cls, v, info: ValidationInfo):
         yaml_path, model_mapping = get_model_mapping_and_path(cls)
 
         if yaml_path is not None:
-            check_model_overlap(field, model_mapping)
+            check_model_overlap(info, model_mapping)
 
             for yaml_file, models in model_mapping.items():
-                if field.name in models:
-                    model_class = cls.__annotations__[field.name]
+                if info.field_name in models:
+                    model_class = cls.model_fields[info.field_name].get_default()
                     yaml_file_path = check_yaml_path(yaml_file, yaml_path)
                     if not yaml_file_path.is_file():
-                        generate_yaml_from_model(field, model_class, yaml_file_path)
-                    return update_yaml_from_model(field, model_class, models, yaml_file_path)
+                        generate_yaml_from_model(info, model_class, yaml_file_path)
+                    return update_yaml_from_model(info, model_class, models, yaml_file_path)
         return v
